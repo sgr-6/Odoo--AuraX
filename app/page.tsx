@@ -1,5 +1,6 @@
 // @ts-nocheck
 // @ts-nocheck
+// @ts-nocheck
 import { redirect } from "next/navigation"
 
 export default function Home() {

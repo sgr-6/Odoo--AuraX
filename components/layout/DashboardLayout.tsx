@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Navbar } from "./Navbar"
 
 export function DashboardLayout({

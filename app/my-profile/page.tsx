@@ -1,5 +1,6 @@
 // @ts-nocheck
 // @ts-nocheck
+// @ts-nocheck
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/actions/auth';
 import { createClient } from '@/lib/supabase/server';

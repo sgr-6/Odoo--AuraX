@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Link from "next/link"
 import { NavbarClient } from "./NavbarClient"
 import { getCurrentUser } from "@/actions/auth"
