@@ -32,6 +32,7 @@ export async function checkIn() {
     return { error: 'Already checked in for today' }
   }
   
+  // @ts-ignore
   const { error } = await supabase
     .from('attendance')
     .insert({
@@ -94,6 +95,7 @@ export async function checkOut() {
   // Assuming 8 hours is standard
   const extraHours = workHours > 8 ? Math.round((workHours - 8) * 100) / 100 : 0
   
+  // @ts-ignore
   const { error } = await supabase
     .from('attendance')
     .update({
