@@ -1,122 +1,189 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Building2, User } from "lucide-react"
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useGlobalStore } from '@/lib/store/GlobalStore';
 
-export default function SignupPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+export default function SignUpPage() {
+  const router = useRouter();
+  const store = useGlobalStore();
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    role: 'employee' as 'admin' | 'employee'
+  });
+  
+  const [errors, setErrors] = useState<string[]>([]);
+  const [showVerify, setShowVerify] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  if (!store?.isHydrated) return null;
 
-    // Mock API call to signUpCompany()
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/dashboard")
-    }, 2000)
+  const validatePassword = (pwd: string) => {
+    const errs = [];
+    if (pwd.length < 8) errs.push('Minimum 8 characters');
+    if (!/[A-Z]/.test(pwd)) errs.push('At least one uppercase letter');
+    if (!/[0-9]/.test(pwd)) errs.push('At least one number');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) errs.push('At least one special character');
+    return errs;
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if email already exists
+    if (store.accounts.some(a => a.email === formData.email)) {
+      setErrors(['An account with this email already exists.']);
+      return;
+    }
+    
+    const pwdErrors = validatePassword(formData.password);
+    if (pwdErrors.length > 0) {
+      setErrors(pwdErrors);
+      return;
+    }
+    
+    setErrors([]);
+    
+    // Create account (unverified)
+    store.registerAccount({
+      email: formData.email,
+      passwordHash: formData.password, // simulating hash for demo
+      role: formData.role
+    });
+    
+    // Show check email screen
+    setShowVerify(true);
+  };
+
+  const handleSimulateVerify = () => {
+    store.verifyAccount(formData.email);
+    router.push('/login');
+  };
+
+  if (showVerify) {
+    return (
+      <div className="min-h-screen bg-[#F7F8FA] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center gap-2 text-2xl font-bold tracking-wide text-gray-900">
+              <div className="w-4 h-4 bg-indigo-600 rounded-sm" />
+              DAYFLOW
+            </div>
+          </div>
+          <div className="bg-white py-10 px-6 shadow-sm rounded-xl sm:px-10 border border-gray-200 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Check your email</h2>
+            <p className="text-gray-500 mb-8">
+              We've sent a verification link to <strong>{formData.email}</strong>. Please verify your email before logging in.
+            </p>
+            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 text-sm text-indigo-700">
+              <em>(Demo Mode)</em> Click the button below to simulate verifying your email instantly.
+            </div>
+            <button
+              onClick={handleSimulateVerify}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+              Simulate Verification & Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 py-12">
-      {/* Decorative background element */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[150px] pointer-events-none" />
+    <div className="min-h-screen bg-[#F7F8FA] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center gap-2 text-2xl font-bold tracking-wide text-gray-900">
+            <div className="w-4 h-4 bg-indigo-600 rounded-sm" />
+            DAYFLOW
+          </div>
+        </div>
+        <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+          Onboard New User
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Admin portal for provisioning employee accounts
+        </p>
+      </div>
 
-      <Card className="w-full max-w-2xl relative z-10 border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="space-y-2 text-center pb-8">
-          <CardTitle className="text-3xl font-bold tracking-tight text-white">
-            Register your Company
-          </CardTitle>
-          <CardDescription className="text-zinc-400">
-            Create an Admin account to get started with Dayflow
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSignup}>
-          <CardContent className="space-y-8">
-            {error && (
-              <div className="p-3 text-sm text-destructive-foreground bg-destructive/90 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            {/* Company Section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 text-primary pb-2 border-b border-border">
-                <Building2 className="w-5 h-5" />
-                <h3 className="font-semibold text-lg">Company Details</h3>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="text-zinc-300">Company Name</Label>
-                  <Input id="companyName" required className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="logo" className="text-zinc-300">Company Logo (Optional)</Label>
-                  <Input id="logo" type="file" accept="image/*" className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11 cursor-pointer file:text-primary file:bg-primary/10 file:border-0 file:rounded-md file:mr-4 file:px-4 file:py-1 hover:file:bg-primary/20" />
-                </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-sm rounded-xl sm:px-10 border border-gray-200">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  type="email"
+                  required
+                  className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
               </div>
             </div>
 
-            {/* Admin Section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 text-primary pb-2 border-b border-border">
-                <User className="w-5 h-5" />
-                <h3 className="font-semibold text-lg">Admin Account</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Temporary Password
+              </label>
+              <div className="mt-1">
+                <input
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-zinc-300">Full Name</Label>
-                  <Input id="fullName" required className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11" />
+              {errors.length > 0 && (
+                <div className="mt-2 text-sm text-red-600">
+                  <ul className="list-disc pl-5">
+                    {errors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-zinc-300">Phone Number</Label>
-                  <Input id="phone" type="tel" required className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-zinc-300">Work Email</Label>
-                  <Input id="email" type="email" required className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-zinc-300">Password</Label>
-                  <Input id="password" type="password" required className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11" />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col space-y-4 pt-6">
-            <Button 
-              type="submit" 
-              className="w-full h-11 font-medium bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all hover:shadow-[0_0_30px_rgba(236,72,153,0.5)]"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating company...
-                </>
-              ) : (
-                "Complete Registration"
               )}
-            </Button>
-            <div className="text-center text-sm text-zinc-400">
-              Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline hover:text-primary/90 font-medium transition-colors">
-                Sign in
-              </Link>
             </div>
-          </CardFooter>
-        </form>
-      </Card>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Account Role
+              </label>
+              <div className="mt-1">
+                <select
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+                  value={formData.role}
+                  onChange={e => setFormData({ ...formData, role: e.target.value as any })}
+                >
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin / HR</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Create Account
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Link href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+              Return to Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

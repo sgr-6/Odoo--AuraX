@@ -9,14 +9,20 @@ export const metadata: Metadata = {
   description: "Modern Human Resources Management System",
 }
 
+import { GlobalStoreProvider } from "@/lib/store/GlobalStore"
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>{children}</body>
+    <html lang="en">
+      <body className={inter.className}>
+        <GlobalStoreProvider>
+          {children}
+        </GlobalStoreProvider>
+      </body>
     </html>
   )
 }

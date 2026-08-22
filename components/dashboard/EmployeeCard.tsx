@@ -1,5 +1,6 @@
 import React from "react"
 import Link from "next/link"
+import { useGlobalStore } from "@/lib/store/GlobalStore"
 
 export type StatusVariant = "present" | "absent" | "leave"
 
@@ -12,6 +13,7 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCardProps) {
+  const store = useGlobalStore()
   const getStatusColor = () => {
     if (status === "present") return "#22c55e" // green-500
     if (status === "absent") return "#eab308" // yellow-500
@@ -32,14 +34,13 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
         
         .emp-card {
           position: relative;
-          background-color: rgba(20, 20, 25, 0.6);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          background-color: #FFFFFF;
           border-radius: 16px;
           padding: 32px 24px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid #E5E7EB;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
           overflow: hidden;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -50,8 +51,8 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
 
         .emp-card:hover {
           transform: translateY(-4px);
-          border-color: rgba(0, 128, 128, 0.5); /* cyan accent */
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 128, 128, 0.2);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          border-color: #D1D5DB;
         }
 
         .emp-card-top-accent {
@@ -60,9 +61,9 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
           left: 0;
           width: 100%;
           height: 4px;
-          background: linear-gradient(90deg, transparent, rgba(0, 128, 128, 0.8), rgba(157, 78, 221, 0.8), transparent);
+          background-color: #4F46E5;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.2s ease;
         }
 
         .emp-card:hover .emp-card-top-accent {
@@ -79,25 +80,18 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
         }
 
         .emp-card-status-dot {
-          width: 12px;
-          height: 12px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
+          border: 2px solid #FFFFFF;
         }
 
         .emp-card-status-dot.present {
-          background-color: #22c55e;
-          box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
-          animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(34, 197, 94, 0.8); }
-          50% { opacity: .7; box-shadow: 0 0 20px rgba(34, 197, 94, 1); }
+          background-color: #16A34A;
         }
 
         .emp-card-status-dot.absent {
-          background-color: #eab308;
-          box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+          background-color: #F59E0B;
         }
 
         .emp-card-avatar-container {
@@ -105,18 +99,12 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
           height: 80px;
           border-radius: 50%;
           margin-bottom: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.15);
           overflow: hidden;
-          background-color: rgba(0,0,0,0.5);
+          background-color: #EEF2FF; /* Soft accent tint */
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: border-color 0.3s ease;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-        }
-
-        .emp-card:hover .emp-card-avatar-container {
-          border-color: rgba(0, 128, 128, 0.6);
+          border: 1px solid #E0E7FF;
         }
 
         .emp-card-avatar-img {
@@ -126,29 +114,29 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
         }
 
         .emp-card-avatar-fallback {
-          color: #e4e4e7;
+          color: #4F46E5;
           font-size: 28px;
-          font-weight: 700;
+          font-weight: 600;
           font-family: sans-serif;
         }
 
         .emp-card-name {
           margin: 0 0 4px 0;
-          font-size: 20px;
-          font-weight: 700;
-          color: #ffffff;
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: #1F2937;
           font-family: sans-serif;
-          transition: color 0.3s ease;
+          transition: color 0.2s ease;
         }
 
         .emp-card:hover .emp-card-name {
-          color: #00ffff; /* glowing cyan on hover */
+          color: #4F46E5;
         }
 
         .emp-card-role {
           margin: 0;
-          font-size: 14px;
-          color: #d1d5db; /* light gray */
+          font-size: 0.9rem;
+          color: #6B7280;
           font-family: sans-serif;
         }
       `}</style>
@@ -159,7 +147,7 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
           
           <div className="emp-card-status" title={`Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`}>
             {status === "leave" ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={statusColor} xmlns="http://www.w3.org/2000/svg" style={{ filter: `drop-shadow(0 0 8px ${statusColor})` }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#6B7280" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17.8 19.2L16 11l4-4c1.1-1.1 2-3.2 2-3.2s-2.1.9-3.2 2l-4 4-8.2-1.8L4 9.5l6 2.5-4 4-3 1 1 3 4-4 2.5 6 1.5-2.8-1.8-8.2z" />
               </svg>
             ) : (
@@ -176,7 +164,39 @@ export function EmployeeCard({ id, name, role, status, avatarUrl }: EmployeeCard
           </div>
           
           <h4 className="emp-card-name">{name}</h4>
-          <p className="emp-card-role">{role}</p>
+          <p className="emp-card-role mb-4">{role}</p>
+
+          <div className="flex gap-2 mt-2 w-full px-4 relative z-10">
+            {status !== "present" && status !== "leave" && (
+              <button 
+                className="flex-1 btn-primary text-xs py-2 px-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  store?.checkIn(id);
+                }}
+              >
+                Check In
+              </button>
+            )}
+            {status === "present" && (
+              <button 
+                className="flex-1 btn-secondary text-xs py-2 px-0 bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  store?.checkOut(id);
+                }}
+              >
+                Check Out
+              </button>
+            )}
+            {status === "leave" && (
+              <span className="flex-1 text-center text-xs font-medium text-gray-500 py-2 bg-gray-50 rounded-md border border-gray-200">
+                On Leave
+              </span>
+            )}
+          </div>
         </div>
       </Link>
     </>

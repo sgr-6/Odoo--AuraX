@@ -1,99 +1,149 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useGlobalStore } from '@/lib/store/GlobalStore';
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const store = useGlobalStore();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  if (!store?.isHydrated) return null;
 
-    // Mock API call to signIn()
-    setTimeout(() => {
-      setIsLoading(false)
-      // Redirect based on backend rules (e.g. to reset password or dashboard)
-      router.push("/dashboard")
-    }, 1500)
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    const acc = store.accounts.find(a => a.email === formData.email);
+    
+    if (!acc) {
+      setError('Incorrect email or password');
+      return;
+    }
+    
+    if (acc.passwordHash !== formData.password) {
+      setError('Incorrect email or password');
+      return;
+    }
+    
+    if (!acc.isVerified) {
+      setError('Your account is not verified. Please check your email.');
+      return;
+    }
+    
+    // Login success
+    store.login(acc);
+    
+    // Redirect based on role
+    if (acc.role === 'admin') {
+      router.push('/dashboard');
+    } else {
+      router.push('/employee-dashboard');
+    }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      {/* Decorative background element */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#F7F8FA] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center gap-2 text-2xl font-bold tracking-wide text-gray-900">
+            <div className="w-4 h-4 bg-indigo-600 rounded-sm" />
+            DAYFLOW
+          </div>
+        </div>
+        <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{' '}
+          <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+            admin provision a new user
+          </Link>
+        </p>
+      </div>
 
-      <Card className="w-full max-w-md relative z-10 border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="space-y-2 text-center pb-8">
-          <CardTitle className="text-3xl font-bold tracking-tight text-white">
-            Welcome back
-          </CardTitle>
-          <CardDescription className="text-zinc-400">
-            Sign in to your Dayflow account
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-6">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-sm rounded-xl sm:px-10 border border-gray-200">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  type="email"
+                  required
+                  className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+            </div>
+
             {error && (
-              <div className="p-3 text-sm text-destructive-foreground bg-destructive/90 rounded-md">
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded-lg">
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-300">Email or Login ID</Label>
-              <Input
-                id="email"
-                type="text"
-                placeholder="m@example.com"
-                required
-                className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-primary h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-zinc-300">Password</Label>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
+                  Remember me
+                </label>
               </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                className="bg-zinc-900/50 border-zinc-800 text-white focus-visible:ring-primary h-11"
-              />
+
+              <div className="text-sm">
+                <Link href="/reset-password" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+                  Forgot your password?
+                </Link>
+              </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-4">
-            <Button 
-              type="submit" 
-              className="w-full h-11 font-medium bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all hover:shadow-[0_0_30px_rgba(236,72,153,0.5)]"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-            <div className="text-center text-sm text-zinc-400">
-              Is your company new to Dayflow?{" "}
-              <Link href="/signup" className="text-primary hover:underline hover:text-primary/90 font-medium transition-colors">
-                Register company
-              </Link>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Sign In
+              </button>
             </div>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+          
+          <div className="mt-6 pt-6 border-t border-gray-100 text-sm text-gray-500 text-center">
+            <strong>Demo Accounts:</strong><br/>
+            Admin: hradmin@gmail.com / Hradmin@dayflow<br/>
+            Employee: employee@dayflow.demo / Emp@1234
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
