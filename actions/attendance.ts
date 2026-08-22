@@ -131,7 +131,7 @@ export async function getEmployeeAttendance(employeeId?: string, month?: number,
   let query = supabase
     .from('attendance')
     .select('*')
-    .eq('employee_id', queryId)
+    .eq('employee_id', queryId as string)
     .order('date', { ascending: false })
     
   // Simple month filtering if provided (assuming YYYY-MM format)
