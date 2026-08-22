@@ -76,18 +76,14 @@ export async function createEmployee(formData: FormData) {
   const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
     email,
     password: tempPassword,
-    email_confirm: false
+    email_confirm: true
   })
   
   if (authError || !authData.user) {
-    return { error: authError?.message || 'Failed to create auth user' }
+    return { error: authError?.message || 'Failed to create user' }
   }
   
   const newUserId = authData.user.id
-  
-  // Manually trigger the signup verification email since admin.createUser bypasses it
-  const { sendOtpEmail } = await import('./otp');
-  await sendOtpEmail(email, fullName);
   
   // Create profile records (we can do this with regular client since RLS allows admin to insert)
   const { error: userError } = await supabase

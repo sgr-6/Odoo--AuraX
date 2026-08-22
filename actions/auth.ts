@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { sendOtpEmail } from './otp'
+import { sendOtpEmail, verifyOtp } from './otp'
 
 export async function signUpCompany(formData: FormData) {
   const supabase = createClient()
@@ -20,25 +20,19 @@ export async function signUpCompany(formData: FormData) {
   
   const adminAuthClient = createAdminClient()
   
-  // Create user in Auth without auto-confirming so we can send custom OTP
+  // Create user in Auth (auto-confirming because OTP is now for login instead)
   const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
     email,
     password,
-    email_confirm: false
+    email_confirm: true
   })
   
   if (authError || !authData.user) {
     return { error: authError?.message || 'Failed to create user' }
   }
-
-  // Send OTP
-  await sendOtpEmail(email, adminName)
-  
-  // Transaction-like behaviour - if company creation fails, user is stuck, but we rely on RLS and DB constraints.
-  // Ideally this would be an RPC call to a stored procedure to be fully atomic.
   
   // 1. Create company
-  const { data: company, error: companyError } = await supabase
+  const { data: company, error: companyError } = await adminAuthClient
     .from('companies')
     .insert({ name: companyName })
     .select('id')
@@ -49,7 +43,7 @@ export async function signUpCompany(formData: FormData) {
   }
   
   // 2. Create user role profile
-  const { error: userError } = await supabase
+  const { error: userError } = await adminAuthClient
     .from('users')
     .insert({
       id: authData.user.id,
@@ -67,8 +61,8 @@ export async function signUpCompany(formData: FormData) {
   return { success: true }
 }
 
-export async function signIn(formData: FormData) {
-  const supabase = createClient()
+export async function verifyLoginCredentials(formData: FormData) {
+  const supabase = createAdminClient() // use admin client to verify without setting cookies
   
   const loginIdOrEmail = formData.get('loginId') as string
   const password = formData.get('password') as string
@@ -81,25 +75,61 @@ export async function signIn(formData: FormData) {
   
   // Check if it's a login_id instead of an email
   if (!loginIdOrEmail.includes('@')) {
-    // We need to look up the email using the service role or a secure RPC, 
-    // because unauthenticated users might not have read access to 'users' table due to RLS.
     const { data, error } = await supabase.rpc('get_email_by_login_id', { p_login_id: loginIdOrEmail })
-    
     if (error || !data) {
       return { error: 'Invalid login ID' }
     }
     email = data
   }
   
+  // Verify password with Admin client (does not set browser cookies)
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  
+  if (error) {
+    return { error: error.message }
+  }
+  
+  // Get full name for the email
+  const { data: emp } = await supabase.from('employees').select('full_name').eq('user_id', data.user.id).single()
+  const name = emp ? emp.full_name : 'User'
+
+  // Send the OTP via EmailJS
+  const otpRes = await sendOtpEmail(email, name)
+  if (otpRes.error) {
+    return { error: otpRes.error }
+  }
+  
+  return { success: true, email }
+}
+
+export async function finalizeLogin(formData: FormData) {
+  const supabase = createClient() // standard client to set cookies
+  
+  const loginIdOrEmail = formData.get('loginId') as string
+  const password = formData.get('password') as string
+  const otp = formData.get('otp') as string
+  const email = formData.get('email') as string
+  
+  if (!loginIdOrEmail || !password || !otp || !email) {
+    return { error: 'Missing information' }
+  }
+  
+  // Verify OTP
+  const otpCheck = await verifyOtp(email, otp)
+  if (otpCheck.error) {
+    return { error: otpCheck.error }
+  }
+  
+  // OTP is valid! Now actually sign them in to set cookies.
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
   
   if (error) {
-    if (error.message.includes('Email not confirmed')) {
-      return { error: 'Please verify your email to continue.', requireOtp: email }
-    }
     return { error: error.message }
   }
   
@@ -142,7 +172,6 @@ export async function changePassword(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
   
-  // Update Supabase Auth password
   const { error: authError } = await supabase.auth.updateUser({
     password: newPassword
   })
@@ -151,7 +180,6 @@ export async function changePassword(formData: FormData) {
     return { error: authError.message }
   }
   
-  // Update must_change_password flag
   const { error: dbError } = await supabase
     .from('users')
     .update({ must_change_password: false })
