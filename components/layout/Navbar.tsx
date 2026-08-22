@@ -1,14 +1,14 @@
 import Link from "next/link"
 import { NavbarClient } from "./NavbarClient"
 import { getCurrentUser } from "@/actions/auth"
-import { getProfile } from "@/actions/profile"
+import { getEmployeeProfile } from "@/actions/profile"
 
 export async function Navbar() {
   const user = await getCurrentUser()
   let employeeData = null
   
   if (user?.profile?.role === 'employee') {
-    const res = await getProfile()
+    const res = await getEmployeeProfile()
     employeeData = res?.profile || null
   }
 

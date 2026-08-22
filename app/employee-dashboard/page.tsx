@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { getCurrentUser } from '@/actions/auth'
-import { getProfile } from '@/actions/profile'
+import { getEmployeeProfile } from '@/actions/profile'
 import { LogoutButton } from './LogoutButton';
 
 export default async function EmployeeDashboard() {
@@ -12,7 +12,7 @@ export default async function EmployeeDashboard() {
     redirect('/login');
   }
 
-  const { profile } = await getProfile();
+  const { profile } = await getEmployeeProfile();
   if (!profile) {
     return <DashboardLayout><div className="p-8 text-center text-gray-500">Employee profile not linked.</div></DashboardLayout>;
   }
