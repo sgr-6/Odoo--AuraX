@@ -1,7 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { sendOtpEmail } from './otp'
 
 export async function signUpCompany(formData: FormData) {
   const supabase = createClient()
@@ -16,15 +18,21 @@ export async function signUpCompany(formData: FormData) {
     return { error: 'Missing required fields' }
   }
   
-  // Create user in Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  const adminAuthClient = createAdminClient()
+  
+  // Create user in Auth without auto-confirming so we can send custom OTP
+  const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
     email,
     password,
+    email_confirm: false
   })
   
   if (authError || !authData.user) {
     return { error: authError?.message || 'Failed to create user' }
   }
+
+  // Send OTP
+  await sendOtpEmail(email, adminName)
   
   // Transaction-like behaviour - if company creation fails, user is stuck, but we rely on RLS and DB constraints.
   // Ideally this would be an RPC call to a stored procedure to be fully atomic.
@@ -89,6 +97,9 @@ export async function signIn(formData: FormData) {
   })
   
   if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      return { error: 'Please verify your email to continue.', requireOtp: email }
+    }
     return { error: error.message }
   }
   

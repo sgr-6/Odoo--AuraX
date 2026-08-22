@@ -20,7 +20,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('registered') === 'true') {
+      if (params.get('verified') === 'true') {
         setIsRegistered(true);
       }
     }
@@ -38,8 +38,12 @@ export default function LoginPage() {
     const result = await signIn(formDataObj);
     
     if (result.error) {
-      setError(result.error);
-      setIsLoading(false);
+      if (result.requireOtp) {
+        router.push(`/verify-otp?email=${encodeURIComponent(result.requireOtp)}`);
+      } else {
+        setError(result.error);
+        setIsLoading(false);
+      }
     } else {
       router.push('/dashboard');
     }
@@ -68,8 +72,8 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         {isRegistered && (
           <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 shadow-sm text-sm">
-            <h3 className="font-bold mb-1">Registration Successful!</h3>
-            <p>Please check your email and click the verification link to verify your account before logging in.</p>
+            <h3 className="font-bold mb-1">Email Verified Successfully!</h3>
+            <p>Your email has been verified. You can now log in securely.</p>
           </div>
         )}
         <div className="bg-white py-8 px-4 shadow-sm rounded-xl sm:px-10 border border-gray-200">

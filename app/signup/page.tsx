@@ -35,7 +35,7 @@ export default function SignUpPage() {
       setError(result.error);
       setIsLoading(false);
     } else {
-      router.push('/login?registered=true');
+      router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     }
   };
 
