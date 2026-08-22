@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from 'react';
+import { createEmployee } from '@/actions/employees';
 
 interface AddEmployeeModalProps {
   onClose: () => void;
-  onSubmit: (data: any) => void;
 }
 
-export default function AddEmployeeModal({ onClose, onSubmit }: AddEmployeeModalProps) {
+export default function AddEmployeeModal({ onClose }: AddEmployeeModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     title: '',
@@ -18,30 +18,38 @@ export default function AddEmployeeModal({ onClose, onSubmit }: AddEmployeeModal
   });
   
   const [generatedCreds, setGeneratedCreds] = useState<{ loginId: string, tempPass: string } | null>(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
     
-    // Auto-generate Login ID and Password
-    const parts = formData.name.trim().split(' ');
-    const firstName = parts[0] || 'XX';
-    const lastName = parts.length > 1 ? parts[parts.length - 1] : 'XX';
-    const nameCode = (firstName.substring(0, 2) + lastName.substring(0, 2)).toUpperCase();
+    const formDataObj = new FormData();
+    formDataObj.append('fullName', formData.name);
+    formDataObj.append('email', formData.email);
+    formDataObj.append('jobTitle', formData.title);
+    formDataObj.append('department', formData.department);
+    formDataObj.append('dateOfJoining', formData.doj);
     
-    const year = formData.doj ? new Date(formData.doj).getFullYear() : new Date().getFullYear();
-    const loginId = `DF-${nameCode}-${year}-0001`;
-    const tempPass = `TempPass123!`;
-
-    setGeneratedCreds({ loginId, tempPass });
-  };
-
-  const handleComplete = () => {
-    onSubmit({ ...formData, ...generatedCreds });
+    const result = await createEmployee(formDataObj);
+    
+    if (result.error) {
+      setError(result.error);
+      setIsLoading(false);
+    } else {
+      setGeneratedCreds({ 
+        loginId: result.loginId || '', 
+        tempPass: result.tempPassword || '' 
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -194,7 +202,15 @@ export default function AddEmployeeModal({ onClose, onSubmit }: AddEmployeeModal
                 <input required type="date" id="doj" name="doj" className="form-input" value={formData.doj} onChange={handleChange} />
               </div>
 
-              <button type="submit" className="btn-primary submit-btn">Generate Credentials</button>
+              {error && (
+                <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={isLoading} className="btn-primary submit-btn disabled:opacity-50">
+                {isLoading ? 'Creating...' : 'Create Employee'}
+              </button>
             </form>
           ) : (
             <div className="space-y-6 mt-4">
@@ -216,7 +232,7 @@ export default function AddEmployeeModal({ onClose, onSubmit }: AddEmployeeModal
                 </p>
               </div>
               
-              <button onClick={handleComplete} className="btn-primary submit-btn">Done</button>
+              <button onClick={onClose} className="btn-primary submit-btn">Done</button>
             </div>
           )}
         </div>
