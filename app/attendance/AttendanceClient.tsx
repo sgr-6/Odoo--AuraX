@@ -8,13 +8,21 @@ export function AttendanceClient({ isAdmin, initialData, employeeList, currentUs
   const [data, setData] = useState(initialData);
 
   const handleCheckIn = async () => {
-    await checkIn();
-    window.location.reload();
+    const result = await checkIn();
+    if (result.error) {
+      alert(result.error);
+    } else {
+      window.location.reload();
+    }
   };
 
   const handleCheckOut = async () => {
-    await checkOut();
-    window.location.reload();
+    const result = await checkOut();
+    if (result.error) {
+      alert(result.error);
+    } else {
+      window.location.reload();
+    }
   };
 
   const filteredAdminData = isAdmin 
@@ -47,6 +55,11 @@ export function AttendanceClient({ isAdmin, initialData, employeeList, currentUs
     )
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayRecord = !isAdmin ? data.find((d: any) => d.date === todayStr) : null;
+  const hasCheckedIn = !!todayRecord;
+  const hasCheckedOut = !!todayRecord?.check_out;
+
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -59,8 +72,20 @@ export function AttendanceClient({ isAdmin, initialData, employeeList, currentUs
         
         {!isAdmin && (
           <div className="flex gap-2">
-            <button onClick={handleCheckIn} className="btn-primary bg-emerald-600 hover:bg-emerald-700">Check In</button>
-            <button onClick={handleCheckOut} className="btn-secondary text-rose-600 border-rose-200 hover:bg-rose-50">Check Out</button>
+            <button 
+              onClick={handleCheckIn} 
+              disabled={hasCheckedIn}
+              className={`btn-primary ${hasCheckedIn ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+            >
+              {hasCheckedIn ? 'Checked In' : 'Check In'}
+            </button>
+            <button 
+              onClick={handleCheckOut} 
+              disabled={!hasCheckedIn || hasCheckedOut}
+              className={`btn-secondary ${!hasCheckedIn || hasCheckedOut ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed' : 'text-rose-600 border-rose-200 hover:bg-rose-50'}`}
+            >
+              {hasCheckedOut ? 'Checked Out' : 'Check Out'}
+            </button>
           </div>
         )}
 
