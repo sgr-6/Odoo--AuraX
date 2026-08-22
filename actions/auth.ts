@@ -92,7 +92,18 @@ export async function verifyLoginCredentials(formData: FormData) {
     return { error: error.message }
   }
   
-  // Get full name for the email
+  // Get user profile to check role
+  const { data: profile } = await supabase.from('users').select('role').eq('id', data.user.id).single()
+  const role = profile?.role || 'employee'
+  
+  if (role === 'admin') {
+    // Admin bypasses OTP! Let's set their cookies using the standard client
+    const standardClient = createClient()
+    await standardClient.auth.signInWithPassword({ email, password })
+    return { success: true, redirect: '/dashboard' }
+  }
+
+  // If employee, continue with OTP
   const { data: emp } = await supabase.from('employees').select('full_name').eq('user_id', data.user.id).single()
   const name = emp ? emp.full_name : 'User'
 

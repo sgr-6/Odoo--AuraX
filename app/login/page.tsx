@@ -44,6 +44,8 @@ export default function LoginPage() {
     if (result.error) {
       setError(result.error);
       setIsLoading(false);
+    } else if (result.redirect) {
+      router.push(result.redirect);
     } else {
       setFormData({ ...formData, email: result.email });
       setStep('otp');
