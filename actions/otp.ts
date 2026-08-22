@@ -38,9 +38,10 @@ export async function sendOtpEmail(email: string, name: string) {
       process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
       process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
       {
-        to_email: email,
+        email: email,
         to_name: name,
-        otp_code: otp,
+        otp: otp,
+        time: new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
     )
     return { success: true }
