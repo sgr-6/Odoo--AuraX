@@ -13,7 +13,7 @@ export async function checkIn() {
     .from('employees')
     .select('id, company_id')
     .eq('user_id', user.id)
-    .single()
+    .single() as { data: any, error: any }
     
   if (!employee) return { error: 'Employee not found' }
   
@@ -26,7 +26,7 @@ export async function checkIn() {
     .select('id')
     .eq('employee_id', employee.id)
     .eq('date', today)
-    .single()
+    .single() as { data: any, error: any }
     
   if (existing) {
     return { error: 'Already checked in for today' }
@@ -58,7 +58,7 @@ export async function checkOut() {
     .from('employees')
     .select('id')
     .eq('user_id', user.id)
-    .single()
+    .single() as { data: any, error: any }
     
   if (!employee) return { error: 'Employee not found' }
   
@@ -71,7 +71,7 @@ export async function checkOut() {
     .select('id, check_in, check_out')
     .eq('employee_id', employee.id)
     .eq('date', today)
-    .single()
+    .single() as { data: any, error: any }
     
   if (fetchError || !existing) {
     return { error: 'No check-in found for today' }
@@ -122,7 +122,7 @@ export async function getEmployeeAttendance(employeeId?: string, month?: number,
       .from('employees')
       .select('id')
       .eq('user_id', user.id)
-      .single()
+      .single() as { data: any, error: any }
       
     if (!employee) return { error: 'Employee not found' }
     queryId = employee.id
