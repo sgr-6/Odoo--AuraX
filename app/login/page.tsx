@@ -3,48 +3,35 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useGlobalStore } from '@/lib/store/GlobalStore';
+import { signIn } from '@/actions/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const store = useGlobalStore();
+  
   const [formData, setFormData] = useState({
-    email: '',
+    loginId: '',
     password: ''
   });
+  
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  if (!store?.isHydrated) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
     
-    const acc = store.accounts.find(a => a.email === formData.email);
+    const formDataObj = new FormData();
+    formDataObj.append('loginId', formData.loginId);
+    formDataObj.append('password', formData.password);
     
-    if (!acc) {
-      setError('Incorrect email or password');
-      return;
-    }
+    const result = await signIn(formDataObj);
     
-    if (acc.passwordHash !== formData.password) {
-      setError('Incorrect email or password');
-      return;
-    }
-    
-    if (!acc.isVerified) {
-      setError('Your account is not verified. Please check your email.');
-      return;
-    }
-    
-    // Login success
-    store.login(acc);
-    
-    // Redirect based on role
-    if (acc.role === 'admin') {
-      router.push('/dashboard');
+    if (result.error) {
+      setError(result.error);
+      setIsLoading(false);
     } else {
-      router.push('/employee-dashboard');
+      router.push('/dashboard');
     }
   };
 
@@ -63,7 +50,7 @@ export default function LoginPage() {
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{' '}
           <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-            admin provision a new user
+            register a new company workspace
           </Link>
         </p>
       </div>
@@ -73,15 +60,16 @@ export default function LoginPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Email address
+                Login ID or Email
               </label>
               <div className="mt-1">
                 <input
-                  type="email"
+                  type="text"
                   required
                   className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.loginId}
+                  onChange={e => setFormData({ ...formData, loginId: e.target.value })}
+                  placeholder="DAY-XXXX-2026-0001 or email"
                 />
               </div>
             </div>
@@ -130,18 +118,13 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                disabled={isLoading}
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
               >
-                Sign In
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
             </div>
           </form>
-          
-          <div className="mt-6 pt-6 border-t border-gray-100 text-sm text-gray-500 text-center">
-            <strong>Demo Accounts:</strong><br/>
-            Admin: hradmin@gmail.com / Hradmin@dayflow<br/>
-            Employee: employee@dayflow.demo / Emp@1234
-          </div>
         </div>
       </div>
     </div>
