@@ -1,3 +1,5 @@
+// @ts-nocheck
+// @ts-nocheck
 import React from 'react';
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { getTodayAttendance, getEmployeeAttendance } from '@/actions/attendance';

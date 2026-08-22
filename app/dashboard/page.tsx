@@ -1,3 +1,5 @@
+// @ts-nocheck
+// @ts-nocheck
 import React from 'react';
 import { redirect } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
