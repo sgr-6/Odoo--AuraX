@@ -75,9 +75,6 @@ export async function signIn(formData: FormData) {
   if (!loginIdOrEmail.includes('@')) {
     // We need to look up the email using the service role or a secure RPC, 
     // because unauthenticated users might not have read access to 'users' table due to RLS.
-    // However, since we need to login, we'll try to login with it directly if we used email.
-    // Wait, Supabase auth requires email. We must fetch the email for this login_id.
-    // To do this securely without exposing service role, we can create a security definer function.
     const { data, error } = await supabase.rpc('get_email_by_login_id', { p_login_id: loginIdOrEmail })
     
     if (error || !data) {
@@ -120,4 +117,39 @@ export async function getCurrentUser() {
   if (profileError) return null
   
   return { auth: user, profile }
+}
+
+export async function changePassword(formData: FormData) {
+  const supabase = createClient()
+  
+  const newPassword = formData.get('newPassword') as string
+  
+  if (!newPassword) {
+    return { error: 'New password is required' }
+  }
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+  
+  // Update Supabase Auth password
+  const { error: authError } = await supabase.auth.updateUser({
+    password: newPassword
+  })
+  
+  if (authError) {
+    return { error: authError.message }
+  }
+  
+  // Update must_change_password flag
+  const { error: dbError } = await supabase
+    .from('users')
+    .update({ must_change_password: false })
+    .eq('id', user.id)
+    
+  if (dbError) {
+    return { error: dbError.message }
+  }
+  
+  revalidatePath('/', 'layout')
+  return { success: true }
 }
