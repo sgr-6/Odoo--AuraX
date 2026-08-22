@@ -76,7 +76,7 @@ export async function createEmployee(formData: FormData) {
   const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
     email,
     password: tempPassword,
-    email_confirm: true
+    email_confirm: false
   })
   
   if (authError || !authData.user) {

@@ -228,7 +228,7 @@ export default function AddEmployeeModal({ onClose }: AddEmployeeModalProps) {
                 </div>
                 
                 <p className="text-indigo-600/80 text-sm italic">
-                  Please securely share these credentials with the employee. They will be required to change their password upon first login.
+                  Please securely share these credentials with the employee. They will be required to change their password upon first login, and must verify their email address before accessing their account.
                 </p>
               </div>
               
