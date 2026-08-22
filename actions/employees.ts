@@ -47,21 +47,28 @@ export async function createEmployee(formData: FormData) {
   }
   
   // Generate Login ID
-  // {first 3 of company}-{first 2 of first}{first 2 of last}-{year}-{sequence}
-  const compPrefix = company.name.substring(0, 3).toUpperCase().padEnd(3, 'X')
-  const nameParts = fullName.trim().split(' ')
-  const first = nameParts[0].substring(0, 2).toUpperCase().padEnd(2, 'X')
-  const last = (nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0]).substring(0, 2).toUpperCase().padEnd(2, 'X')
-  const year = new Date(dateOfJoining).getFullYear()
+  // Format: [Company Initials][First Name 2 letters + Last Name 2 letters][Year of Joining][4-digit Serial Number]
+  const compWords = company.name.trim().split(/\s+/);
+  let compPrefix = '';
+  if (compWords.length > 1) {
+    compPrefix = compWords.map((w: string) => w[0]).join('').substring(0, 3).toUpperCase();
+  } else {
+    compPrefix = company.name.substring(0, 2).toUpperCase().padEnd(2, 'X');
+  }
+  
+  const nameParts = fullName.trim().split(/\s+/);
+  const first = nameParts[0].substring(0, 2).toUpperCase().padEnd(2, 'X');
+  const last = (nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0]).substring(0, 2).toUpperCase().padEnd(2, 'X');
+  const year = new Date(dateOfJoining).getFullYear();
   
   const { count } = await supabase
     .from('employees')
     .select('*', { count: 'exact', head: true })
-    .eq('company_id', companyId)
+    .eq('company_id', companyId);
     
-  const seq = ((count || 0) + 1).toString().padStart(4, '0')
-  const loginId = `${compPrefix}-${first}${last}-${year}-${seq}`
-  const tempPassword = generateTempPassword()
+  const seq = ((count || 0) + 1).toString().padStart(4, '0');
+  const loginId = `${compPrefix}${first}${last}${year}${seq}`;
+  const tempPassword = generateTempPassword();
   
   // Use admin client to create user so we don't log out the admin
   const adminAuthClient = createAdminClient()
@@ -147,4 +154,16 @@ export async function getEmployees() {
     
   if (error) return { error: error.message }
   return { employees: data }
+}
+
+export async function getEmployeeById(id: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*, users!inner(email, role, login_id)')
+    .eq('id', id)
+    .single()
+    
+  if (error) return { error: error.message }
+  return { employee: data }
 }
