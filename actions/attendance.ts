@@ -40,7 +40,7 @@ export async function checkIn() {
       date: today,
       check_in: now,
       status: 'present'
-    })
+    } as any)
     
   if (error) return { error: error.message }
   
@@ -100,7 +100,7 @@ export async function checkOut() {
       check_out: now,
       work_hours: workHours,
       extra_hours: extraHours
-    })
+    } as any)
     .eq('id', existing.id)
     
   if (error) return { error: error.message }
